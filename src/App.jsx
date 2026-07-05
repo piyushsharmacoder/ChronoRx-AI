@@ -961,6 +961,130 @@ function ClinicalScenarios() {
   );
 }
 
+// ─── SCENARIO DEEP DIVE (expandable card grid) ──────────────────────────
+// Complements ClinicalScenarios (tab view) with 4 highlighted cases people
+// can expand inline to see the physiological reasoning. Uses the same
+// design tokens (C), Icon set and useInView hook as the rest of the site —
+// no new dependencies.
+const SCENARIO_DEEP_DIVE_DATA = [
+  {
+    id: 1,
+    tag: "<110/65 at night",
+    title: "Non-dipper pattern, but night BP is already low",
+    typical: "Bedtime dose",
+    chrono: "Morning dose",
+    chronoColor: "indigo",
+    mechanism: "Non-dipping describes the shape of the overnight fall (<10%), not the absolute level. Night BP here is already low. A bedtime dose peaks in the middle of the night — right on top of an already-low reading.",
+    why: "ChronoRx AI weighs the absolute night BP over the dipping label alone, and keeps the dose in the morning to avoid pushing an already-low night reading into hypotensive territory.",
+  },
+  {
+    id: 2,
+    tag: "20+ mmHg rise within 2 hrs of waking",
+    title: "High morning surge on a long-acting CCB",
+    typical: "Morning dose",
+    chrono: "Bedtime dose",
+    chronoColor: "emerald",
+    mechanism: "This drug class peaks 6–12 hours after intake. A morning dose reaches peak effect in the afternoon — well after the surge already happened.",
+    why: "ChronoRx AI times the dose to the drug's own pharmacokinetic curve. A bedtime dose peaks right as the early-morning surge would begin, blunting it before it happens.",
+  },
+  {
+    id: 4,
+    tag: "Night BP higher than day BP",
+    title: "Reverse dipper pattern",
+    typical: "Either, confidently",
+    chrono: "Doctor review",
+    chronoColor: "gold",
+    mechanism: "This is the highest-risk dipping category in outcome studies — often a sign of something needing a fuller workup, not just a timing fix.",
+    why: "There's no solid evidence either timing corrects a reverse-dipper pattern on its own. ChronoRx AI withholds a confident call and routes the case through the Doctor Gateway instead.",
+  },
+  {
+    id: 8,
+    tag: "Elevated at both readings",
+    title: "High morning BP, night BP already elevated too",
+    typical: "Morning dose",
+    chrono: "Bedtime dose",
+    chronoColor: "emerald",
+    mechanism: "A high morning reading draws attention to the morning — but night BP is elevated too. This is a 24-hour burden, not a morning-only problem.",
+    why: "ChronoRx AI reads the full profile, not just the reading that prompted the visit. A bedtime dose covers the night and carries into the next morning, addressing both.",
+  },
+];
+
+const DEEP_DIVE_CHIP_COLORS = {
+  indigo: { fg: C.indigo, bg: "rgba(90,94,234,.1)", border: "rgba(90,94,234,.28)" },
+  emerald: { fg: C.emerald, bg: "rgba(14,163,113,.1)", border: "rgba(14,163,113,.28)" },
+  gold: { fg: C.gold, bg: "rgba(217,119,6,.1)", border: "rgba(217,119,6,.28)" },
+};
+
+function DeepDiveChip({ label, kind = "muted" }) {
+  if (kind === "muted") {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, letterSpacing: ".03em", color: C.steel, background: C.pearl, border: `1px solid ${C.line}` }}>
+        {label}
+      </span>
+    );
+  }
+  const c = DEEP_DIVE_CHIP_COLORS[kind];
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, letterSpacing: ".03em", color: c.fg, background: c.bg, border: `1px solid ${c.border}` }}>
+      {label}
+    </span>
+  );
+}
+
+function DeepDiveCard({ scenario }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="card-hover" style={{ borderRadius: 22, background: "white", border: `1px solid ${C.line}`, overflow: "hidden" }}>
+      <div onClick={() => setOpen(v => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, padding: "26px 26px 22px" }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: C.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 8 }}>{scenario.tag}</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.navy, lineHeight: 1.4, marginBottom: 18 }}>{scenario.title}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+            <DeepDiveChip label={scenario.typical} kind="muted" />
+            <Icon name="arrowRight" size={13} color={C.muted} />
+            <DeepDiveChip label={scenario.chrono} kind={scenario.chronoColor} />
+          </div>
+        </div>
+        <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.pearl, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform .3s ease" }}>
+          <Icon name="arrowDown" size={14} color={C.steel} />
+        </div>
+      </div>
+      <div style={{ maxHeight: open ? 420 : 0, opacity: open ? 1 : 0, transition: "max-height .35s ease, opacity .3s ease", overflow: "hidden" }}>
+        <div style={{ padding: "0 26px 26px", borderTop: `1px solid ${C.line}` }}>
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: C.muted, letterSpacing: ".07em", textTransform: "uppercase", marginBottom: 8 }}>Why the first call is tempting</div>
+            <p style={{ fontSize: 13.5, color: C.steel, lineHeight: 1.7 }}>{scenario.mechanism}</p>
+          </div>
+          <div style={{ marginTop: 18 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: C.emerald, letterSpacing: ".07em", textTransform: "uppercase", marginBottom: 8 }}>Why ChronoRx AI differs</div>
+            <p style={{ fontSize: 13.5, color: C.steel, lineHeight: 1.7 }}>{scenario.why}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScenarioDeepDive() {
+  const [ref, visible] = useInView();
+  return (
+    <section ref={ref} id="scenario-deep-dive" style={{ padding: "150px 5vw", background: C.pearl }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <SectionHead
+          eyebrow="When The Data Disagrees With The Default"
+          title="Four cases,"
+          italic="worth a closer look"
+          sub="A typical first-pass clinical call points one way — ChronoRx AI's multi-factor analysis points the other. Tap a card for the reasoning."
+          max={720}
+        />
+        <div className="grid-auto-3" style={{ gap: 20, opacity: visible ? 1 : 0, transform: visible ? "none" : "translateY(20px)", transition: "all .7s ease" }}>
+          {SCENARIO_DEEP_DIVE_DATA.map(s => <DeepDiveCard key={s.id} scenario={s} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── DOCTOR DASHBOARD ────────────────────────────────────────────────────
 function DoctorDashboard() {
   const [ref, visible] = useInView();
@@ -1255,6 +1379,7 @@ export default function ChronoRxAppV2() {
         <ExplainableAISection />
         <ScientificFoundation />
         <ClinicalScenarios />
+        <ScenarioDeepDive />
         <DoctorDashboard />
         <PatientDashboard />
         <RemoteMonitoring />
